@@ -1,294 +1,355 @@
 import React, { useState } from 'react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { rubricCriteria } from '../data/rubricData';
 
-const commentBank = [
-  "Look to include separate paragraphs so that your ideas are made clearer and your piece has a more solid structure.",
-  "Looking to make stronger links to the purpose of the piece, and including more content that aims to connect to the audience will bring improvement.",
-  "Some of your marks have been limited by the amount of content that you have produced."
+const primaryFeedback = [
+  "Outstanding – keep practising and well done!",
+  "Very good, but there’s one or two small things that have kept you from the very top mark.",
+  "A ‘solid’ piece of writing, with a couple of factors holding it back.",
+  "A competent piece that lacks the sense of completion of those that are scoring higher.",
+  "A piece that is ‘doing the job’, but there’s more it could be doing in order to be better.",
+  "Showing that there’s some things we can work on to improve your piece.",
+  "Telling us that your focus needs to be on ensuring you understand the task."
 ];
 
-const Rubric = () => {
-  const [selections, setSelections] = useState({});
+const secondaryFeedback = [
+    "Ensure your language is clear throughout the whole piece.",
+    "You need to engage with the 'big ideas' and show a level of insight through your writing, going further than what the statements say.",
+    "Consider how your arguments have a greater impact upon the community, nation, world.",
+    "Your piece is not as 'complete' as a 10 in the sense of its structure and conclusion.",
+    "The statements could be responded to in a more creative and thoughtful manner.",
+    "Your piece doesn't quite have a 'complete' feel due to length and how comprehensively the material is covered.",
+    "You need to engage with more insightful ideas/arguments.",
+    "Your piece has an opinion but it needs more supporting ideas.",
+    "You need to go beyond the basic premise of the information – bring in thinking and ideas that show you've considered your community/the world.",
+    "Your piece is too brief.",
+    "Your piece lacks the flow, structure and eloquence of higher scoring pieces.",
+    "Your opinion and contention is not entirely clear and focused.",
+    "You have not engaged with the material throughout your entire piece.",
+    "Your piece doesn't have a sense of completion – it doesn't work through arguments and conclude with a strong sense of resolution.",
+    "Errors in your grammar, punctuation, syntax that impact on the meaning of your writing.",
+    "You haven't organised your piece into a coherent series of arguments.",
+    "Most of what you have written is merely a reiteration of the statements provided.",
+    "Your use of language hasn't allowed you to be as clear as needed.",
+    "Remember that you need to organise the material into paragraphs.",
+    "Remember that you need to work with the statements to make a clear point. Take a position.",
+    "Remember that you need to write clearly and focus on making clear arguments."
+  ];
+
+const commentBank = [
+    "This was a good start! Keep going and provide further thinking and ideas in a more comprehensive piece.",
+    "Aim to add further thinking and arguments to your piece to lift it further.",
+    "Look to develop your point of view further through the use of separate ideas, organised in paragraphs, that support your overarching contention.",
+    "Look to develop your point of view further through the use of separate ideas, organised in paragraphs, that support your overarching contention. Also look to avoid referring directly to the information - instead use it as inspiration for your own point of view.",
+    "Flesh out your arguments further and add more thought and ideas to your paragraphs to improve.",
+    "Develop your own point of view. You don’t need to refer to the material directly or reference which information you are using in your thinking and writing.",
+    "Look to be stronger and bolder in your view – make it clear what you believe!"
+];
+
+export default function Rubric() {
+  const [students, setStudents] = useState([]);
+  const [studentName, setStudentName] = useState('');
+  const [score, setScore] = useState(null);
+  const [primary, setPrimary] = useState('');
+  const [secondary, setSecondary] = useState([]);
   const [comments, setComments] = useState([]);
   const [customComment, setCustomComment] = useState('');
-  const [studentName, setStudentName] = useState('');
-  const [students, setStudents] = useState([]);
 
-  const handleSelect = (criterionIndex, levelIndex) => {
-    if (!rubricCriteria[criterionIndex].levels[levelIndex].clickable) return;
-    setSelections((prev) => ({ ...prev, [criterionIndex]: levelIndex }));
-  };
-
-  const handleAddComment = (comment) => {
-    setComments((prev) => [...prev, comment]);
-  };
-
-  const handleAddCustomComment = () => {
-    if (customComment.trim()) {
-      setComments((prev) => [...prev, customComment.trim()]);
-      setCustomComment('');
-    }
-  };
-
-  const handleRemoveComment = (index) => {
-    setComments((prev) => prev.filter((_, i) => i !== index));
-  };
-
-  const getFileName = (ext) => {
-    const safeName = studentName.trim().replace(/\s+/g, '_') || 'student';
-    const date = new Date().toISOString().split('T')[0];
-    return `${safeName}-feedback-${date}.${ext}`;
-  };
-
-  const handleExportPDF = () => {
-    const doc = new jsPDF({ orientation: 'landscape' });
-    const pageWidth = doc.internal.pageSize.getWidth();
-  
-    // Header
-    doc.setFontSize(10);
-    doc.text(`Student: ${studentName}`, pageWidth - 60, 10);
-  
-    doc.setFontSize(16);
-    doc.text('Section A Writing Tasks – Assessment and Feedback', pageWidth / 2, 20, { align: 'center' });
-  
-    doc.setFontSize(11);
-    doc.text(
-      'Based on the writing of both Part 1 and Part 2, you have been assessed at the following score. Use the highlighted advice to improve your work.',
-      pageWidth / 2,
-      28,
-      { align: 'center' }
-    );
-  
-    const getPageRubric = (criteriaSubset, offset) =>
-      criteriaSubset.map((criterion, cIdx) => {
-        const row = [criterion.criterion];
-        criterion.levels.forEach((level, lIdx) => {
-          const isSelected = selections[cIdx + offset] === lIdx;
-          row.push({
-            content: level.description,
-            styles: {
-              fillColor: isSelected ? [173, 216, 230] : undefined,
-              textColor: 20,
-            },
-          });
-        });
-        return row;
-      });
-  
-    const levelsRow = ['Criterion', ...rubricCriteria[0].levels.map((level) => level.level)];
-  
-    const midpoint = 3;
-    const firstHalf = rubricCriteria.slice(0, midpoint);
-    const secondHalf = rubricCriteria.slice(midpoint);
-  
-    autoTable(doc, {
-      head: [levelsRow],
-      body: getPageRubric(firstHalf, 0),
-      startY: 35,
-      styles: { fontSize: 8, cellPadding: 2, valign: 'top' },
-      headStyles: {
-        fillColor: [220, 220, 220],
-        textColor: 0,
-        halign: 'center',
-      },
-    });
-    
-  
-    doc.addPage('landscape');
-  
-    autoTable(doc, {
-      head: [levelsRow],
-      body: getPageRubric(secondHalf, midpoint),
-      startY: 20,
-      styles: { fontSize: 8, cellPadding: 2, valign: 'top' },
-      headStyles: {
-        fillColor: [220, 220, 220],
-        textColor: 0,
-        halign: 'center',
-      },
-    });
-    
-  
-    // Further Feedback box
-    let finalY = doc.lastAutoTable.finalY + 10;
-    doc.setFontSize(12);
-    doc.text('Further Feedback:', 10, finalY);
-    finalY += 4;
-  
-    const commentText = comments.length > 0 ? comments.join('\n\n') : 'No comments provided.';
-    doc.setDrawColor(0);
-    doc.setLineWidth(0.2);
-    doc.rect(10, finalY, 270, 30);
-    doc.setFontSize(10);
-    doc.text(doc.splitTextToSize(commentText, 265), 12, finalY + 5);
-  
-    // Total score
-    const score = rubricCriteria.reduce((sum, crit, idx) => {
-      const val = selections[idx];
-      if (val === undefined || crit.levels[val].level === '0/NA') return sum;
-      const levelValue = parseInt(crit.levels[val].level, 10);
-      return isNaN(levelValue) ? sum : sum + levelValue;
-    }, 0);
-  
-    doc.setFontSize(11);
-    doc.text(`Total Score: ${score}`, pageWidth - 60, 200);
-  
-    doc.save(`${studentName.trim().replace(/\s+/g, '_') || 'student'}-feedback.pdf`);
-  };  
-
+  // -- CSV Upload Handlers --
   const handleCSVUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-  
     const reader = new FileReader();
-    reader.onload = (event) => {
-      const text = event.target.result;
-      const lines = text.trim().split('\n');
+    reader.onload = (evt) => {
+      const lines = evt.target.result.trim().split('\n');
+      // Assuming header row: firstName,lastName,class
       const data = lines.slice(1).map(line => {
-        const [first, last, group] = line.split(',');
+        const [first, last, classGroup] = line.split(',');
         return {
           name: `${first.trim()} ${last.trim()}`,
-          class: group?.trim() || '',
+          class: classGroup?.trim() || ''
         };
       });
       setStudents(data);
     };
     reader.readAsText(file);
   };
-  
   const handleStudentSelect = (e) => {
-    const selected = students.find(s => s.name === e.target.value);
-    if (selected) {
-      setStudentName(selected.name);
+    setStudentName(e.target.value);
+  };
+
+  // -- Feedback Logic --
+  const toggleSecondary = (item) => {
+    setSecondary(prev =>
+      prev.includes(item)
+        ? prev.filter(i => i !== item)
+        : prev.length < 4
+        ? [...prev, item]
+        : prev
+    );
+  };
+  const addComment = (text) => {
+    if (!comments.includes(text)) setComments([...comments, text]);
+  };
+  const handleAddCustomComment = () => {
+    if (customComment.trim()) {
+      addComment(customComment.trim());
+      setCustomComment('');
     }
   };
-  
 
+  // -- PDF Export --
+  const exportPDF = () => {
+    const doc = new jsPDF({ orientation: 'portrait' });
+    const pageWidth = doc.internal.pageSize.getWidth();
+  
+    // — Header —
+    doc.setFontSize(16);
+    doc.text(
+      'GAT Section B – Feedback',
+      pageWidth / 2,
+      15,
+      { align: 'center' }
+    );
+  
+    // — Student & Score —
+    doc.setFontSize(12);
+    doc.text(`Student: ${studentName}`, 15, 30);
+    doc.text(
+      `Score: ${score !== null ? score : 'Not selected'}`,
+      15,
+      40
+    );
+  
+    // — Primary Feedback Table —
+    autoTable(doc, {
+      startY: 50,
+      head: [
+        ['Generally, your piece has been assessed as:']
+      ],
+      body: [
+        [ primary || 'None selected' ]
+      ],
+      headStyles: {
+        fillColor: [25,118,210],
+        fontStyle: 'bold'
+      },
+      styles: {
+        fontSize: 10,
+        cellPadding: 4
+      },
+      theme: 'striped'
+    });
+  
+    // — Secondary Feedback Table —
+    autoTable(doc, {
+      startY: doc.lastAutoTable.finalY + 10,
+      head: [
+        ['The reasons why you’ve been assessed this way:']
+      ],
+      body: secondary.length
+        ? secondary.map(item => [item])
+        : [['None selected']],
+      headStyles: {
+        fillColor: [25,118,210],
+        fontStyle: 'bold'
+      },
+      styles: {
+        fontSize: 10,
+        cellPadding: 4
+      },
+      theme: 'striped'
+    });
+  
+    // — Further Feedback Table —
+    autoTable(doc, {
+      startY: doc.lastAutoTable.finalY + 10,
+      head: [
+        ['Further Feedback']
+      ],
+      body: comments.length
+        ? comments.map(c => [c])
+        : [['None provided']],
+      headStyles: {
+        fillColor: [25,118,210],
+        fontStyle: 'bold'
+      },
+      styles: {
+        fontSize: 10,
+        cellPadding: 4
+      },
+      theme: 'striped'
+    });
+  
+    // — Save PDF —
+    const filename = `${studentName
+      .trim()
+      .replace(/\s+/g, '_') || 'student'}_GATSectionB_Feedback.pdf`;
+    doc.save(filename);
+  };
   return (
-    <div style={{ padding: '2rem' }}>
-      <h2>Assessment Rubric</h2>
+    <div style={{ padding: '2rem', maxWidth: '800px', margin: 'auto' }}>
+      <h2>GAT Section B – Assessment and Feedback</h2>
+
+      {/* CSV Upload + Student Select */}
       <div style={{ marginBottom: '1rem' }}>
-  <label>
-    <strong>Upload Student List (CSV): </strong>
-    <input type="file" accept=".csv" onChange={handleCSVUpload} />
-  </label>
+        <label>
+          <strong>Upload Student List (CSV):</strong>
+          <input
+            type="file"
+            accept=".csv"
+            onChange={handleCSVUpload}
+            style={{ marginLeft: '1rem' }}
+          />
+        </label>
+      </div>
+      {students.length > 0 && (
+        <div style={{ marginBottom: '1rem' }}>
+          <label>
+            <strong>Select Student:</strong>
+            <select
+              value={studentName}
+              onChange={handleStudentSelect}
+              style={{ marginLeft: '1rem', padding: '0.5rem' }}
+            >
+              <option value="">-- Choose a student --</option>
+              {students.map((s, i) => (
+                <option key={i} value={s.name}>
+                  {s.name} {s.class && `(${s.class})`}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+      )}
+
+      {/* Student Name Fallback/Edit */}
+      <div style={{ marginBottom: '1rem' }}>
+        <label>
+          <strong>Student Name:</strong>
+          <input
+            type="text"
+            value={studentName}
+            onChange={e => setStudentName(e.target.value)}
+            placeholder="Enter student name"
+            style={{ marginLeft: '1rem', padding: '0.5rem', width: '300px' }}
+          />
+        </label>
+      </div>
+
+      {/* Score Selection */}
+      <div style={{ marginBottom: '1rem' }}>
+        <strong>Score (0–10):</strong>
+        <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+          {[...Array(11).keys()].map(n => (
+            <label key={n}>
+              <input
+                type="radio"
+                name="score"
+                value={n}
+                checked={score === n}
+                onChange={() => setScore(n)}
+              />{' '}
+              {n}
+            </label>
+          ))}
+        </div>
+      </div>
+
+      {/* Primary Feedback */}
+      <div style={{ marginBottom: '1rem' }}>
+  <strong>Generally, your piece has been assessed as:</strong>
+  <select
+    value={primary}
+    onChange={e => setPrimary(e.target.value)}
+    style={{ marginLeft: '1rem', padding: '0.5rem', width: '100%' }}
+  >
+    <option value="">-- Choose a rating --</option>
+    {primaryFeedback.map((item, idx) => (
+      <option key={idx} value={item}>{item}</option>
+    ))}
+  </select>
 </div>
 
-{students.length > 0 && (
-  <div style={{ marginBottom: '1rem' }}>
-    <label>
-      <strong>Select Student: </strong>
-      <select
-        value={studentName}
-        onChange={handleStudentSelect}
-        style={{ marginLeft: '1rem', padding: '0.5rem' }}
-      >
-        <option value="">-- Choose a student --</option>
-        {students.map((s, idx) => (
-          <option key={idx} value={s.name}>
-            {s.name} ({s.class})
-          </option>
-        ))}
-      </select>
-    </label>
-  </div>
-)}
-
-
+      {/* Secondary Feedback */}
       <div style={{ marginBottom: '1rem' }}>
-        <strong>Student Name: </strong>
+  <strong>The reasons why you've been assessed this way:</strong>
+  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+    {secondaryFeedback.map((item, idx) => (
+      <label key={idx}>
         <input
-          type="text"
-          value={studentName}
-          onChange={(e) => setStudentName(e.target.value)}
-          placeholder="Enter student name"
-          style={{ marginLeft: '1rem', padding: '0.5rem', width: '300px' }}
-        />
-      </div>
+          type="checkbox"
+          checked={secondary.includes(item)}
+          onChange={() => toggleSecondary(item)}
+          disabled={!secondary.includes(item) && secondary.length >= 4}
+        />{' '}
+        {item}
+      </label>
+    ))}
+  </div>
+</div>
 
-      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-        <thead>
-          <tr>
-            <th style={{ border: '1px solid #ccc', padding: '8px' }}>Criterion</th>
-            {rubricCriteria[0].levels.map((level, idx) => (
-              <th key={idx} style={{ border: '1px solid #ccc', padding: '8px' }}>{level.level}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {rubricCriteria.map((criterion, cIdx) => (
-            <tr key={cIdx}>
-              <td style={{ border: '1px solid #ccc', padding: '8px', fontWeight: 'bold' }}>{criterion.criterion}</td>
-              {criterion.levels.map((level, lIdx) => {
-                const isSelected = selections[cIdx] === lIdx;
-                return (
-                  <td
-                    key={lIdx}
-                    onClick={() => handleSelect(cIdx, lIdx)}
-                    style={{
-                      border: '1px solid #ccc',
-                      padding: '8px',
-                      cursor: level.clickable ? 'pointer' : 'not-allowed',
-                      backgroundColor: isSelected ? '#d0ebff' : level.clickable ? 'white' : '#f0f0f0',
-                      fontSize: '0.85rem'
-                    }}
-                  >
-                    {level.description}
-                  </td>
-                );
-              })}
-            </tr>
+      {/* Comment Bank */}
+      <div style={{ marginTop: '1rem' }}>
+        <strong>Comment Bank:</strong>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+          {commentBank.map((text, idx) => (
+            <button
+              key={idx}
+              onClick={() => addComment(text)}
+              style={{ padding: '0.5rem', textAlign: 'left' }}
+            >
+              {text}
+            </button>
           ))}
-        </tbody>
-      </table>
-
-      <div style={{ marginTop: '2rem' }}>
-        <h3>Comment Bank</h3>
-        {commentBank.map((comment, idx) => (
-          <button
-            key={idx}
-            onClick={() => handleAddComment(comment)}
-            style={{ display: 'block', margin: '4px 0', padding: '8px', border: '1px solid #ccc' }}
-          >
-            {comment}
-          </button>
-        ))}
+        </div>
       </div>
 
-      <div style={{ marginTop: '2rem' }}>
+      {/* Custom Comment */}
+      <div style={{ marginTop: '1rem' }}>
         <textarea
           rows="3"
           value={customComment}
-          onChange={(e) => setCustomComment(e.target.value)}
-          placeholder="Write your comment here..."
-          style={{ width: '100%', padding: '0.5rem' }}
+          onChange={e => setCustomComment(e.target.value)}
+          placeholder="Add a custom comment..."
+          style={{ width: '100%', marginBottom: '0.5rem' }}
         />
         <br />
-        <button onClick={handleAddCustomComment}>Add Comment</button>
+        <button onClick={handleAddCustomComment}>Add Custom Comment</button>
       </div>
 
-      <div style={{ marginTop: '2rem' }}>
-        <h3>Selected Comments</h3>
+      {/* Selected Comments */}
+      <div style={{ marginTop: '1rem' }}>
+        <h4>Selected Comments:</h4>
         <ul>
-          {comments.map((comment, idx) => (
-            <li key={idx}>
-              {comment}
-              <button onClick={() => handleRemoveComment(idx)} style={{ marginLeft: '1rem' }}>Remove</button>
+          {comments.map((c, i) => (
+            <li key={i}>
+              {c}{' '}
+              <button
+                onClick={() =>
+                  setComments(comments.filter((_, idx) => idx !== i))
+                }
+              >
+                Remove
+              </button>
             </li>
           ))}
         </ul>
       </div>
 
+      {/* Export */}
       <button
-        onClick={handleExportPDF}
-        style={{ marginTop: '2rem', padding: '1rem', backgroundColor: '#1976d2', color: 'white', border: 'none' }}
+        onClick={exportPDF}
+        style={{
+          marginTop: '2rem',
+          padding: '1rem',
+          backgroundColor: '#1976d2',
+          color: 'white',
+          border: 'none'
+        }}
       >
         Export as PDF
       </button>
     </div>
   );
-};
-
-export default Rubric;
+}
